@@ -87,7 +87,7 @@ Source: "..\drivers\install_obs_silent.ps1"; DestDir: "{app}\drivers"; Flags: ig
 ; === OBS Installer (bundled) ===
 ; NOTE: You need to place the OBS installer in the 'installer' folder before building
 ; Download from: https://obsproject.com/download
-Source: "OBS-Studio-Full-Installer-x64.exe"; DestDir: "{tmp}"; Flags: ignoreversion deleteafterinstall nocompression; Components: obs; Check: not IsOBSInstalled
+Source: "OBS-Studio-Full-Installer-x64.exe"; DestDir: "{tmp}"; Flags: ignoreversion deleteafterinstall nocompression skipifsourcedoesntexist; Components: obs; Check: not IsOBSInstalled
 
 ; === License ===
 Source: "..\LICENSE"; DestDir: "{app}"; Flags: ignoreversion; Components: main
@@ -107,7 +107,7 @@ Root: HKLM; Subkey: "Software\{#MyAppPublisher}\{#MyAppName}"; ValueType: string
 
 [Run]
 ; Install OBS silently if component selected and OBS not installed
-Filename: "{tmp}\OBS-Studio-Full-Installer-x64.exe"; Parameters: "/S"; StatusMsg: "{cm:InstallingOBS}"; Flags: waituntilterminated; Components: obs; Check: not IsOBSInstalled
+Filename: "{tmp}\OBS-Studio-Full-Installer-x64.exe"; Parameters: "/S"; StatusMsg: "{cm:InstallingOBS}"; Flags: waituntilterminated skipifdoesntexist; Components: obs; Check: not IsOBSInstalled
 
 ; Register virtual camera driver
 Filename: "regsvr32"; Parameters: "/s ""{code:GetVCamDll64Path}"""; StatusMsg: "{cm:RegisteringDriver}"; Flags: waituntilterminated runhidden; Check: VCamDllExists
