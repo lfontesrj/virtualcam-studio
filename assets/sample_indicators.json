@@ -1,0 +1,7 @@
+[
+  {"label": "Vendas Hoje", "value": "R$ 45.230", "color": [100, 255, 100]},
+  {"label": "Meta Mensal", "value": "78%", "color": [255, 255, 100]},
+  {"label": "Tickets Abertos", "value": "12", "color": [255, 150, 100]},
+  {"label": "NPS", "value": "87", "color": [100, 200, 255]},
+  {"label": "Uptime", "value": "99.8%", "color": [100, 255, 100]}
+]

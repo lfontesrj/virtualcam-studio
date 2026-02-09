@@ -1,0 +1,5 @@
+Vendas Hoje: R$ 45.230
+Meta Mensal: 78% atingida
+Tickets Abertos: 12
+NPS: 87
+Uptime: 99.8%

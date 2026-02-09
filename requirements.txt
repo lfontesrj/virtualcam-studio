@@ -1,0 +1,17 @@
+# VirtualCam Studio - Dependencies (Optimized)
+# Total estimated size: ~50 MB (vs ~180 MB original)
+
+# Core video processing (headless = no Qt GUI, saves ~45 MB)
+opencv-python-headless>=4.8.0
+
+# Numerical computing
+numpy>=1.24.0
+
+# Virtual camera output
+pyvirtualcam>=0.10.0
+
+# GUI framework (lightweight, ~5 MB vs ~80 MB for PyQt5)
+customtkinter>=5.2.0
+
+# Image handling for preview widget
+Pillow>=10.0.0

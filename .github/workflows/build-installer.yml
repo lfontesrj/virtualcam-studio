@@ -1,0 +1,171 @@
+# ============================================================
+# VirtualCam Studio - Build Automático do Instalador Windows
+# ============================================================
+# Este workflow compila o projeto Python em um .exe com PyInstaller
+# e gera o instalador com Inno Setup, tudo automaticamente.
+#
+# Triggers:
+#   - Push na branch 'main' (build automático)
+#   - Criação de tag 'v*' (gera Release com o instalador)
+#   - Manual via workflow_dispatch
+# ============================================================
+
+name: Build Windows Installer
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      include_obs:
+        description: 'Incluir OBS Studio no instalador (all-in-one)'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'false'
+          - 'true'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build Installer (Windows)
+    runs-on: windows-latest
+
+    steps:
+      # ---- Checkout do código ----
+      - name: Checkout do repositório
+        uses: actions/checkout@v4
+
+      # ---- Setup Python ----
+      - name: Configurar Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      # ---- Instalar dependências ----
+      - name: Instalar dependências Python
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller
+        shell: cmd
+
+      # ---- Instalar UPX para compressão ----
+      - name: Instalar UPX
+        run: |
+          choco install upx -y
+        shell: cmd
+
+      # ---- Gerar templates de overlay ----
+      - name: Gerar templates
+        run: python src/template_generator.py
+        shell: cmd
+
+      # ---- Compilar com PyInstaller ----
+      - name: Compilar executável com PyInstaller
+        run: |
+          pyinstaller virtualcam_studio.spec --noconfirm --clean
+        shell: cmd
+
+      # ---- Verificar build ----
+      - name: Verificar arquivos compilados
+        run: |
+          echo "=== Conteudo do dist ==="
+          dir dist\VirtualCamStudio\ /s
+          echo.
+          echo "=== Tamanho total ==="
+          powershell -Command "(Get-ChildItem -Path 'dist\VirtualCamStudio' -Recurse | Measure-Object -Property Length -Sum).Sum / 1MB"
+          echo " MB"
+        shell: cmd
+
+      # ---- (Opcional) Baixar OBS para bundle all-in-one ----
+      - name: Baixar OBS Studio (all-in-one)
+        if: github.event.inputs.include_obs == 'true'
+        run: |
+          echo Baixando OBS Studio...
+          powershell -Command "Invoke-WebRequest -Uri 'https://cdn-fastly.obsproject.com/downloads/OBS-Studio-30.2.3-Full-Installer-x64.exe' -OutFile 'installer\OBS-Studio-Full-Installer-x64.exe'"
+          echo Download concluido.
+          dir installer\OBS-Studio-Full-Installer-x64.exe
+        shell: cmd
+
+      # ---- Compilar instalador com Inno Setup ----
+      - name: Compilar instalador com Inno Setup
+        uses: Minionguyjpro/Inno-Setup-Action@v1.2.2
+        with:
+          path: installer/setup_allinone.iss
+          options: /O+
+
+      # ---- Localizar e renomear o instalador ----
+      - name: Localizar instalador gerado
+        id: find_installer
+        run: |
+          echo "=== Procurando instalador ==="
+          powershell -Command "Get-ChildItem -Path . -Recurse -Filter 'VirtualCamStudio_Setup_*.exe' | ForEach-Object { Write-Host $_.FullName; Write-Host ('Size: ' + [math]::Round($_.Length / 1MB, 2) + ' MB') }"
+          powershell -Command "$f = Get-ChildItem -Path . -Recurse -Filter 'VirtualCamStudio_Setup_*.exe' | Select-Object -First 1; echo \"installer_path=$($f.FullName)\" >> $env:GITHUB_OUTPUT; echo \"installer_name=$($f.Name)\" >> $env:GITHUB_OUTPUT"
+        shell: cmd
+
+      # ---- Upload do instalador como artefato ----
+      - name: Upload do instalador (Artifact)
+        uses: actions/upload-artifact@v4
+        with:
+          name: VirtualCamStudio-Installer
+          path: dist/installer/VirtualCamStudio_Setup_*.exe
+          if-no-files-found: warn
+          retention-days: 90
+
+      # ---- Upload do executável standalone (sem instalador) ----
+      - name: Upload do executável standalone (Artifact)
+        uses: actions/upload-artifact@v4
+        with:
+          name: VirtualCamStudio-Portable
+          path: dist/VirtualCamStudio/
+          if-no-files-found: warn
+          retention-days: 90
+
+  # ============================================================
+  # Release automático quando uma tag v* é criada
+  # ============================================================
+  release:
+    name: Criar Release
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Baixar artefatos do build
+        uses: actions/download-artifact@v4
+        with:
+          name: VirtualCamStudio-Installer
+          path: ./installer
+
+      - name: Listar arquivos baixados
+        run: ls -lhR ./installer
+
+      - name: Criar Release no GitHub
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "VirtualCam Studio ${{ github.ref_name }}"
+          body: |
+            ## VirtualCam Studio ${{ github.ref_name }}
+
+            ### Download
+            Baixe o instalador abaixo e execute no Windows 11.
+            A instalação é do tipo "Next > Next > Finish" — nenhum conhecimento técnico é necessário.
+
+            ### Requisitos
+            - Windows 11 (64-bit)
+            - ~60-70 MB de espaço em disco
+            - OBS Studio (será solicitado durante a instalação se não estiver presente)
+
+            ### Novidades
+            - Consulte o CHANGELOG para detalhes das mudanças.
+          files: ./installer/VirtualCamStudio_Setup_*.exe
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

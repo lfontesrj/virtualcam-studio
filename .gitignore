@@ -1,0 +1,35 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+build/
+*.spec.bak
+
+# Virtual environment
+venv/
+env/
+.venv/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Build artifacts
+*.exe
+!installer/*.iss
+
+# OBS Installer (too large for git)
+installer/OBS-Studio-Full-Installer-x64.exe
+
+# User config
+config/
+logs/
