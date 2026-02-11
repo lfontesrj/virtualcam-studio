@@ -2,10 +2,10 @@
 # Total estimated size: ~50 MB (vs ~180 MB original)
 
 # Core video processing (headless = no Qt GUI, saves ~45 MB)
-opencv-python-headless>=4.8.0
+opencv-python-headless>=4.8.0,<4.11.0
 
-# Numerical computing
-numpy>=1.24.0
+# Numerical computing (MUST use 1.x - NumPy 2.x has packaging issues with PyInstaller)
+numpy>=1.24.0,<2.0.0
 
 # Virtual camera output
 pyvirtualcam>=0.10.0
