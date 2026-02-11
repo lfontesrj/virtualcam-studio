@@ -1,6 +1,6 @@
 # -*- mode: python ; coding: utf-8 -*-
 """
-PyInstaller spec file for VirtualCam Studio (Optimized).
+PyInstaller spec file for VirtualCam Studio (Optimized + Debug).
 Run with: pyinstaller virtualcam_studio.spec --noconfirm
 """
 
@@ -21,6 +21,13 @@ if ctk_spec and ctk_spec.origin:
     ctk_path = os.path.dirname(ctk_spec.origin)
     ctk_datas = [(ctk_path, 'customtkinter')]
 
+# Find darkdetect (dependency of customtkinter)
+dd_spec = importlib.util.find_spec('darkdetect')
+dd_datas = []
+if dd_spec and dd_spec.origin:
+    dd_path = os.path.dirname(dd_spec.origin)
+    dd_datas = [(dd_path, 'darkdetect')]
+
 a = Analysis(
     ['src/main.py'],
     pathex=[src_dir],
@@ -34,27 +41,59 @@ a = Analysis(
         ('drivers/uninstall_virtualcam.bat', 'drivers'),
         ('drivers/install_obs_silent.ps1', 'drivers'),
         ('LICENSE', '.'),
-    ] + ctk_datas,
+    ] + ctk_datas + dd_datas,
     hiddenimports=[
+        # Core dependencies
         'cv2',
         'numpy',
+        'numpy.core',
+        'numpy.core._methods',
+        'numpy.lib',
+        'numpy.lib.format',
+        # GUI
+        'tkinter',
+        'tkinter.messagebox',
+        'tkinter.filedialog',
+        'tkinter.colorchooser',
+        'customtkinter',
+        'darkdetect',
+        # Image handling
         'PIL',
         'PIL.Image',
         'PIL.ImageTk',
-        'customtkinter',
+        'PIL._tkinter_finder',
+        # Virtual camera
         'pyvirtualcam',
         'pyvirtualcam.camera',
+        # App modules
         'first_run',
         'camera_manager',
         'compositor',
         'main_window',
         'settings',
         'template_generator',
+        # Stdlib that may be needed
+        'json',
+        'configparser',
+        'email',
+        'email.mime',
+        'email.mime.text',
+        'http',
+        'http.client',
+        'urllib',
+        'urllib.request',
+        'webbrowser',
+        'subprocess',
+        'threading',
+        'logging',
+        'logging.handlers',
+        'traceback',
+        'pkg_resources',
     ],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
-    # Aggressive exclusions to reduce size
+    # Conservative exclusions - only exclude what we're sure is not needed
     excludes=[
         # PyQt5 / Qt (no longer used)
         'PyQt5', 'PyQt6', 'PySide2', 'PySide6', 'sip', 'sipbuild',
@@ -62,16 +101,13 @@ a = Analysis(
         'scipy', 'pandas', 'matplotlib', 'seaborn', 'plotly',
         'sklearn', 'tensorflow', 'torch', 'torchvision',
         # Testing
-        'pytest', 'unittest', 'doctest',
+        'pytest', 'doctest',
         # Dev tools
         'IPython', 'jupyter', 'notebook', 'ipykernel',
-        'setuptools', 'pip', 'wheel', 'distutils',
         # Unused stdlib
-        'xmlrpc', 'pydoc', 'pdb', 'profile', 'cProfile',
+        'pydoc', 'pdb', 'profile', 'cProfile',
         'lib2to3', 'ensurepip', 'venv',
-        'multiprocessing', 'concurrent',
         'asyncio', 'aiohttp',
-        'html.parser', 'http.server',
         'ftplib', 'imaplib', 'smtplib', 'poplib',
         'telnetlib', 'turtle', 'turtledemo',
         'curses', 'idlelib',
@@ -92,9 +128,9 @@ exe = EXE(
     name='VirtualCamStudio',
     debug=False,
     bootloader_ignore_signals=False,
-    strip=False,    # Do NOT strip - can cause issues on Windows
-    upx=False,      # Disable UPX on main exe to prevent DLL load errors
-    console=False,
+    strip=False,
+    upx=False,
+    console=True,   # ENABLED for debugging - shows console with error messages
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,
@@ -108,9 +144,9 @@ coll = COLLECT(
     a.binaries,
     a.zipfiles,
     a.datas,
-    strip=False,    # Do NOT strip on Windows
-    upx=False,      # Disable UPX entirely to prevent python311.dll corruption
-    upx_exclude=[   # Extra safety: exclude critical DLLs even if UPX re-enabled
+    strip=False,
+    upx=False,
+    upx_exclude=[
         'python*.dll',
         'python3*.dll',
         'vcruntime*.dll',

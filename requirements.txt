@@ -15,3 +15,9 @@ customtkinter>=5.2.0
 
 # Image handling for preview widget
 Pillow>=10.0.0
+
+# Theme detection (dependency of customtkinter)
+darkdetect>=0.8.0
+
+# Packaging support
+packaging>=23.0
