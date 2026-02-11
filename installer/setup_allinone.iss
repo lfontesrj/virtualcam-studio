@@ -6,7 +6,7 @@
 ; ============================================================
 
 #define MyAppName "VirtualCam Studio"
-#define MyAppVersion "1.0.0"
+#define MyAppVersion "1.0.1"
 #define MyAppPublisher "VirtualCam Studio"
 #define MyAppURL "https://github.com/virtualcam-studio"
 #define MyAppExeName "VirtualCamStudio.exe"
@@ -31,8 +31,8 @@ WizardStyle=modern
 PrivilegesRequired=admin
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
-MinVersion=10.0.22000
-; Minimum Windows 11
+MinVersion=10.0
+; Minimum Windows 10
 DisableProgramGroupPage=yes
 LicenseFile=..\LICENSE
 ; WizardImageFile=..\assets\wizard_image.bmp

@@ -40,41 +40,55 @@ jobs:
       - name: Checkout do repositório
         uses: actions/checkout@v4
 
-      # ---- Setup Python ----
-      - name: Configurar Python 3.11
+      # ---- Setup Python (versão fixa para estabilidade) ----
+      - name: Configurar Python 3.11.9
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: '3.11.9'
           cache: 'pip'
+
+      # ---- Instalar Visual C++ Redistributable ----
+      - name: Instalar Visual C++ Redistributable 2015-2022
+        run: |
+          echo "Verificando VC++ Redistributable..."
+          choco install vcredist140 -y --no-progress
+        shell: cmd
 
       # ---- Instalar dependências ----
       - name: Instalar dependências Python
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          pip install pyinstaller
+          pip install pyinstaller==6.11.1
         shell: cmd
 
-      # ---- Instalar UPX para compressão ----
-      - name: Instalar UPX
-        run: |
-          choco install upx -y
-        shell: cmd
+      # ---- NÃO instalar UPX (causa corrupção de python311.dll) ----
+      # UPX foi removido para evitar o erro:
+      # "Failed to load Python DLL - LoadLibrary: Acesso inválido ao local de memória"
 
       # ---- Gerar templates de overlay ----
       - name: Gerar templates
         run: python src/template_generator.py
         shell: cmd
 
-      # ---- Compilar com PyInstaller ----
+      # ---- Compilar com PyInstaller (sem UPX) ----
       - name: Compilar executável com PyInstaller
         run: |
           pyinstaller virtualcam_studio.spec --noconfirm --clean
         shell: cmd
 
-      # ---- Verificar build ----
-      - name: Verificar arquivos compilados
+      # ---- Verificar que python311.dll está presente e não corrompida ----
+      - name: Verificar integridade do build
         run: |
+          echo "=== Verificando python311.dll ==="
+          powershell -Command "if (Test-Path 'dist\VirtualCamStudio\_internal\python311.dll') { $f = Get-Item 'dist\VirtualCamStudio\_internal\python311.dll'; Write-Host ('python311.dll encontrada: ' + [math]::Round($f.Length / 1MB, 2) + ' MB') } else { Write-Host 'ERRO: python311.dll NAO encontrada!'; exit 1 }"
+          echo.
+          echo "=== Verificando python3.dll ==="
+          powershell -Command "if (Test-Path 'dist\VirtualCamStudio\_internal\python3.dll') { Write-Host 'python3.dll encontrada' } else { Write-Host 'AVISO: python3.dll nao encontrada, copiando...'; $pydir = Split-Path (Get-Command python).Source; Copy-Item (Join-Path $pydir 'python3.dll') 'dist\VirtualCamStudio\_internal\python3.dll' -ErrorAction SilentlyContinue }"
+          echo.
+          echo "=== Verificando vcruntime140.dll ==="
+          powershell -Command "if (Test-Path 'dist\VirtualCamStudio\_internal\vcruntime140.dll') { Write-Host 'vcruntime140.dll encontrada' } else { Write-Host 'AVISO: vcruntime140.dll nao encontrada, copiando...'; $pydir = Split-Path (Get-Command python).Source; Copy-Item (Join-Path $pydir 'vcruntime140.dll') 'dist\VirtualCamStudio\_internal\vcruntime140.dll' -ErrorAction SilentlyContinue }"
+          echo.
           echo "=== Conteudo do dist ==="
           dir dist\VirtualCamStudio\ /s
           echo.
@@ -158,12 +172,14 @@ jobs:
             A instalação é do tipo "Next > Next > Finish" — nenhum conhecimento técnico é necessário.
 
             ### Requisitos
-            - Windows 11 (64-bit)
-            - ~60-70 MB de espaço em disco
+            - Windows 10/11 (64-bit)
+            - ~70 MB de espaço em disco
             - OBS Studio (será solicitado durante a instalação se não estiver presente)
 
-            ### Novidades
-            - Consulte o CHANGELOG para detalhes das mudanças.
+            ### Correções nesta versão
+            - Corrigido erro "Failed to load Python DLL" ao iniciar o aplicativo
+            - Removida compressão UPX que causava corrupção de DLLs
+            - Adicionada verificação de integridade das DLLs no build
           files: ./installer/VirtualCamStudio_Setup_*.exe
           draft: false
           prerelease: false

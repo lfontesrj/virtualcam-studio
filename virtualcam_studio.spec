@@ -5,6 +5,7 @@ Run with: pyinstaller virtualcam_studio.spec --noconfirm
 """
 
 import os
+import sys
 
 block_cipher = None
 
@@ -91,8 +92,8 @@ exe = EXE(
     name='VirtualCamStudio',
     debug=False,
     bootloader_ignore_signals=False,
-    strip=True,   # Strip debug symbols
-    upx=True,     # UPX compression
+    strip=False,    # Do NOT strip - can cause issues on Windows
+    upx=False,      # Disable UPX on main exe to prevent DLL load errors
     console=False,
     disable_windowed_traceback=False,
     argv_emulation=False,
@@ -107,12 +108,20 @@ coll = COLLECT(
     a.binaries,
     a.zipfiles,
     a.datas,
-    strip=True,
-    upx=True,
-    upx_exclude=[
-        'vcruntime140.dll',
+    strip=False,    # Do NOT strip on Windows
+    upx=False,      # Disable UPX entirely to prevent python311.dll corruption
+    upx_exclude=[   # Extra safety: exclude critical DLLs even if UPX re-enabled
+        'python*.dll',
         'python3*.dll',
+        'vcruntime*.dll',
         'ucrtbase.dll',
+        'msvcp*.dll',
+        'api-ms-win-*.dll',
+        'libcrypto*.dll',
+        'libssl*.dll',
+        'libffi*.dll',
+        'select.pyd',
+        '_socket.pyd',
     ],
     name='VirtualCamStudio',
 )
