@@ -71,7 +71,7 @@ a = Analysis(
         'lib2to3', 'ensurepip', 'venv',
         'multiprocessing', 'concurrent',
         'asyncio', 'aiohttp',
-        'email', 'html.parser', 'http.server',
+        'html.parser', 'http.server',
         'ftplib', 'imaplib', 'smtplib', 'poplib',
         'telnetlib', 'turtle', 'turtledemo',
         'curses', 'idlelib',
